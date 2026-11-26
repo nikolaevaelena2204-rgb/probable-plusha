@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Письмо для тебя 💌</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow: hidden;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    text-align: center;
+    position: relative;
+  }
+
+  h1 {
+    color: #764ba2;
+    margin-bottom: 20px;
+    font-size: 28px;
+  }
+
+  p { color: #555; margin-bottom: 15px; line-height: 1.6; }
+
+  textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 15px;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 16px;
+    resize: vertical;
+    margin-bottom: 20px;
+    transition: border-color 0.3s;
+  }
+
+  textarea:focus {
+    outline: none;
+    border-color: #764ba2;
+  }
+
+  button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 14px 30px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(118,75,162,0.4);
+  }
+
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .link-box {
+    background: #f4f4f8;
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 20px;
+    word-break: break-all;
+    font-size: 14px;
+    color: #333;
+    display: none;
+  }
+
+  .link-box input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-top: 10px;
+    font-size: 13px;
+  }
+
+  .hidden { display: none !important; }
+
+  /* Основной экран письма */
+  #letterScreen .letter-preview {
+    background: #fff8e7;
+    border: 2px dashed #f0c060;
+    border-radius: 12px;
+    padding: 25px;
+    margin: 20px 0;
+    font-style: italic;
+    color: #555;
+    position: relative;
+  }
+
+  #letterScreen .letter-preview::before {
+    content: "✉️";
+    position: absolute;
+    top: -15px;
+    left: 20px;
+    font-size: 30px;
+  }
+
+  .buttons-row {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 25px;
+    position: relative;
+    min-height: 60px;
+  }
+
+  #btnYes {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  }
+
+  #btnNo {
+    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+    position: relative;
+    transition: all 0.15s ease;
+  }
+
+  /* Модальное окно */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+
+  .modal {
+    background: #fff;
+    border-radius: 20px;
+    padding: 35px;
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    position: relative;
+    min-height: 280px;
+  }
+
+  .modal h2 { color: #764ba2; margin-bottom: 15px; font-size: 24px; }
+  .modal p { color: #555; margin-bottom: 25px; font-size: 18px; }
+
+  .modal-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    position: relative;
+    min-height: 60px;
+  }
+
+  #btnModalYes {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  }
+
+  #btnModalNo {
+    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+    position: relative;
+    transition: all 0.15s ease;
+  }
+
+  .fade-in { animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .emoji-big { font-size: 50px; margin-bottom: 15px; }
+</style>
+</head>
+<body>
+
+<!-- ЭКРАН 1: Создание письма -->
+<div class="card" id="createScreen">
+  <h1>💌 Напиши письмо</h1>
+  <p>Напиши своё послание и отправь ссылку другу</p>
+  <textarea id="messageInput" placeholder="Дорогой друг, пишу тебе..."></textarea>
+  <button id="createBtn">Создать ссылку</button>
+  <div class="link-box" id="linkBox">
+    <div>🔗 Ссылка готова! Отправь её другу:</div>
+    <input type="text" id="linkInput" readonly>
+    <button style="margin-top:10px;font-size:14px;padding:10px 20px" id="copyBtn">Копировать</button>
+  </div>
+</div>
+
+<!-- ЭКРАН 2: Просмотр письма -->
+<div class="card hidden" id="letterScreen">
+  <h1>📬 Тебе письмо!</h1>
+  <p>Кто-то отправил тебе послание. Откроешь?</p>
+  <div class="letter-preview" id="previewText">Здесь будет послание...</div>
+  <div class="buttons-row" id="mainButtons">
+    <button id="btnYes">Да, открыть</button>
+    <button id="btnNo">Нет</button>
+  </div>
+  <div id="openedMessage" class="hidden" style="margin-top:20px;">
+    <div class="emoji-big">💖</div>
+    <div class="letter-preview" id="fullMessage" style="font-style:normal;color:#333;"></div>
+  </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО: Подтверждение "Нет" -->
+<div class="modal-overlay hidden" id="modal">
+  <div class="modal">
+    <h2>Точно?</h2>
+    <p>Ты уверен, что не хочешь открыть письмо? 😢</p>
+    <div class="modal-buttons">
+      <button id="btnModalYes">Да, точно</button>
+      <button id="btnModalNo">Нет, открыть</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- УТИЛИТЫ ----------
+
+// Получаем сообщение из URL (base64)
+function getMessageFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  const encoded = params.get('msg');
+  if (!encoded) return null;
+  try {
+    return decodeURIComponent(escape(atob(encoded)));
+  } catch(e) {
+    return null;
+  }
+}
+
+// Кодируем сообщение для ссылки
+function encodeMessage(text) {
+  return btoa(unescape(encodeURIComponent(text)));
+}
+
+// ---------- ЭКРАН СОЗДАНИЯ ----------
+
+const createScreen = document.getElementById('createScreen');
+const letterScreen = document.getElementById('letterScreen');
+const messageInput = document.getElementById('messageInput');
+const createBtn = document.getElementById('createBtn');
+const linkBox = document.getElementById('linkBox');
+const linkInput = document.getElementById('linkInput');
+const copyBtn = document.getElementById('copyBtn');
+
+createBtn.addEventListener('click', () => {
+  const text = messageInput.value.trim();
+  if (!text) {
+    messageInput.style.borderColor = '#ef4444';
+    messageInput.placeholder = 'Напиши хоть что-нибудь! 😊';
+    return;
+  }
+  const encoded = encodeMessage(text);
+  const url = window.location.origin + window.location.pathname + '?msg=' + encoded;
+  linkInput.value = url;
+  linkBox.style.display = 'block';
+  createBtn.disabled = true;
+});
+
+copyBtn.addEventListener('click', () => {
+  linkInput.select();
+  document.execCommand('copy');
+  copyBtn.textContent = '✅ Скопировано!';
+  setTimeout(() => copyBtn.textContent = 'Копировать', 2000);
+});
+
+// ---------- ЭКРАН ПИСЬМА ----------
+
+const previewText = document.getElementById('previewText');
+const fullMessage = document.getElementById('fullMessage');
+const openedMessage = document.getElementById('openedMessage');
+const mainButtons = document.getElementById('mainButtons');
+const btnYes = document.getElementById('btnYes');
+const btnNo = document.getElementById('btnNo');
+
+// ---------- ЛОГИКА "НЕУЛОВИМОЙ" КНОПКИ ----------
+
+// Отодвигает кнопку от курсора
+function dodgeButton(btn, container, event) {
+  if (!btn || !event) return;
+  
+  // На мобильных не трогаем — пусть просто работает
+  if (window.innerWidth < 768) return;
+
+  const btnRect = btn.getBoundingClientRect();
+  const mouseX = event.clientX;
+  const mouseY = event.clientY;
+
+  // Центр кнопки
+  const btnCenterX = btnRect.left + btnRect.width / 2;
+  const btnCenterY = btnRect.top + btnRect.height / 2;
+
+  // Вектор от курсора к кнопке
+  let dx = btnCenterX - mouseX;
+  let dy = btnCenterY - mouseY;
+  const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+
+  // Сила отталкивания обратно пропорциональна расстоянию
+  const power = Math.min(200, 12000 / dist);
+  
+  let newX = dx / dist * power;
+  let newY = dy / dist * power;
+
+  // Текущее смещение
+  const curX = parseFloat(btn.dataset.offsetX || 0);
+  const curY = parseFloat(btn.dataset.offsetY || 0);
+
+  // Ограничиваем, чтобы не улетела за пределы контейнера
+  const maxOffset = 120;
+  let finalX = Math.max(-maxOffset, Math.min(maxOffset, curX + newX));
+  let finalY = Math.max(-maxOffset, Math.min(maxOffset, curY + newY));
+
+  btn.dataset.offsetX = finalX;
+  btn.dataset.offsetY = finalY;
+  btn.style.transform = `translate(${finalX}px, ${finalY}px)`;
+}
+
+// Сброс смещения
+function resetButton(btn) {
+  btn.dataset.offsetX = 0;
+  btn.dataset.offsetY = 0;
+  btn.style.transform = 'translate(0, 0)';
+}
+
+// ---------- МОДАЛЬНОЕ ОКНО ----------
+
+const modal = document.getElementById('modal');
+const btnModalYes = document.getElementById('btnModalYes');
+const btnModalNo = document.getElementById('btnModalNo');
+
+// Состояние: "нет" на главном экране уже был нажат?
+let noPressedOnce = false;
+
+// ---------- ОСНОВНАЯ ЛОГИКА ----------
+
+function initLetterScreen(message) {
+  previewText.textContent = '... ' + message.substring(0, 60) + (message.length > 60 ? '...' : '');
+  fullMessage.textContent = message;
+
+  // ---- Кнопка "Да" на главном экране ----
+  btnYes.addEventListener('click', () => {
+    openedMessage.classList.remove('hidden');
+    mainButtons.style.display = 'none';
+    previewText.parentElement.style.display = 'none';
+  });
+
+  // ---- Кнопка "Нет" на главном экране ----
+  btnNo.addEventListener('mouseenter', (e) => {
+    // Если окно уже открыто — не трогаем
+    if (!modal.classList.contains('hidden')) return;
+    // Наводим — отодвигаем
+    dodgeButton(btnNo, mainButtons, e);
+  });
+
+  // Отслеживаем движение мыши по кнопке — отталкиваем
+  btnNo.addEventListener('mousemove', (e) => {
+    if (!modal.classList.contains('hidden')) return;
+    dodgeButton(btnNo, mainButtons, e);
+  });
+
+  // Если всё-таки кликнули "Нет" на главном экране
+  btnNo.addEventListener('click', (e) => {
+    if (noPressedOnce) return; // защита от повторного открытия
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Открываем модалку
+    modal.classList.remove('hidden');
+    noPressedOnce = true;
+
+    // Сброс смещения основной кнопки "Нет"
+    resetButton(btnNo);
+  });
+
+  // ---- Модальное окно ----
+
+  // Кнопка "Да, точно" в модалке — закрывает окно и возвращает на главный экран,
+  // но кнопка "Нет" на главном экране пропадает
+  btnModalYes.addEventListener('click', () => {
+    modal.classList.add('hidden');
+    // Кнопка "Нет" на главном экране пропадает
+    btnNo.style.display = 'none';
+    // Сбрасываем смещение
+    resetButton(btnNo);
+  });
+
+  // Кнопка "Нет, открыть" в модалке — отодвигается от курсора
+  btnModalNo.addEventListener('mouseenter', (e) => {
+    dodgeButton(btnModalNo, btnModalNo.parentElement, e);
+  });
+
+  btnModalNo.addEventListener('mousemove', (e) => {
+    dodgeButton(btnModalNo, btnModalNo.parentElement, e);
+  });
+
+  // Если всё-таки кликнули "Нет, открыть" в модалке —
+  // открываем письмо (это ведь "Нет" = не открывать, но раз нажали... 
+  // по логике "Нет, открыть" — значит открыть)
+  btnModalNo.addEventListener('click', () => {
+    // По условию: "если курсор наводится, то кнопка пропадает и остаётся только да"
+    // Значит клик по ней маловероятен. Но если случился — считаем как "Да".
+    modal.classList.add('hidden');
+    openedMessage.classList.remove('hidden');
+    mainButtons.style.display = 'none';
+    previewText.parentElement.style.display = 'none';
+    btnNo.style.display = 'none';
+  });
+
+  // ---- Особое поведение: когда курсор наводится на кнопку "Нет" в модалке,
+  // она пропадает и остаётся только "Да" ----
+  // Реализуем через mouseenter: после первого наведения скрываем кнопку
+  let modalNoHidden = false;
+  btnModalNo.addEventListener('mouseenter', () => {
+    if (modalNoHidden) return;
+    // Небольшая задержка, чтобы она успела "отодвинуться" пару раз,
+    // а потом исчезнуть
+    setTimeout(() => {
+      if (!modal.classList.contains('hidden')) {
+        btnModalNo.style.opacity = '0';
+        btnModalNo.style.pointerEvents = 'none';
+        modalNoHidden = true;
+      }
+    }, 400);
+  });
+
+  // Сброс при закрытии модалки
+  const observer = new MutationObserver(() => {
+    if (modal.classList.contains('hidden')) {
+      // Сброс кнопки "Нет" в модалке
+      btnModalNo.style.opacity = '1';
+      btnModalNo.style.pointerEvents = 'auto';
+      resetButton(btnModalNo);
+      modalNoHidden = false;
+    }
+  });
+  observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+}
+
+// ---------- ЗАПУСК ----------
+
+const message = getMessageFromURL();
+
+if (message) {
+  // Есть сообщение — показываем экран письма
+  createScreen.classList.add('hidden');
+  letterScreen.classList.remove('hidden');
+  initLetterScreen(message);
+} else {
+  // Нет сообщения — показываем экран создания
+  createScreen.classList.remove('hidden');
+  letterScreen.classList.add('hidden');
+}
+
+// Сброс смещения кнопки "Нет" на главном экране при уходе курсора
+// (чтобы не улетала насовсем)
+btnNo.addEventListener('mouseleave', () => {
+  // Не сбрасываем сразу, пусть остаётся где есть — так интереснее
+});
+</script>
+</body>
+</html>
